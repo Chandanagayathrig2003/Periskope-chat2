@@ -4,16 +4,17 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Chat, ChatMember, Profile, ChatLabel } from '@/types/database';
 import { 
-  BsSearch, 
-  BsPlus, 
-  BsFilter,
-  BsThreeDotsVertical,
-  BsCheckCircle,
-  BsCircle,
-  BsArchive,
-  BsStar,
-  BsPhone
-} from 'react-icons/bs';
+  Search, 
+  Plus, 
+  Filter,
+  MoreVertical,
+  CheckCircle,
+  Circle,
+  Archive,
+  Star,
+  Phone,
+  MessageCircle
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -139,7 +140,7 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
       <div className="px-4 py-3 border-b border-gray-200">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <BsChatDots className="w-4 h-4 text-gray-600" />
+            <MessageCircle className="w-4 h-4 text-gray-600" />
             <h1 className="text-lg font-medium text-gray-900">chats</h1>
           </div>
           <div className="flex items-center space-x-1">
@@ -148,14 +149,14 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
               ⚡ Upgrade Plan
             </Button>
             <Button variant="ghost" size="sm" className="w-8 h-8 p-0">
-              <BsThreeDotsVertical className="w-4 h-4" />
+              <MoreVertical className="w-4 h-4" />
             </Button>
           </div>
         </div>
         
         {/* Search */}
         <div className="relative mb-3">
-          <BsSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             placeholder="Search"
             value={searchTerm}
@@ -204,7 +205,7 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
             Internal
           </Button>
           <Button variant="ghost" size="sm" className="w-7 h-7 p-0">
-            <BsFilter className="w-4 h-4" />
+            <Filter className="w-4 h-4" />
           </Button>
         </div>
       </div>
@@ -214,14 +215,14 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
         {filteredChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-8">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-              <BsChatDots className="w-8 h-8 text-gray-400" />
+              <MessageCircle className="w-8 h-8 text-gray-400" />
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">No chats yet</h3>
             <p className="text-gray-500 text-sm mb-4">
               Start a conversation to see it here
             </p>
             <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white">
-              <BsPlus className="w-4 h-4 mr-1" />
+              <Plus className="w-4 h-4 mr-1" />
               New Chat
             </Button>
           </div>
@@ -261,7 +262,7 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
                           minute: '2-digit'
                         })}
                       </span>
-                      <BsPhone className="w-3 h-3 text-gray-400" />
+                      <Phone className="w-3 h-3 text-gray-400" />
                     </div>
                   </div>
                   
@@ -286,8 +287,8 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
                 </div>
                 
                 <div className="flex flex-col items-center space-y-1">
-                  <BsStar className="w-3 h-3 text-gray-300" />
-                  <BsArchive className="w-3 h-3 text-gray-300" />
+                  <Star className="w-3 h-3 text-gray-300" />
+                  <Archive className="w-3 h-3 text-gray-300" />
                 </div>
               </div>
             </div>
