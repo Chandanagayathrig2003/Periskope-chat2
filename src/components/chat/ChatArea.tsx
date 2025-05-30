@@ -93,7 +93,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
       .eq('chat_id', chatId);
 
     if (membersData) {
-      setChatMembers(membersData);
+      setChatMembers(membersData as any);
     }
   };
 
@@ -108,7 +108,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
       .order('created_at', { ascending: true });
 
     if (data) {
-      setMessages(data);
+      setMessages(data as any);
     }
   };
 

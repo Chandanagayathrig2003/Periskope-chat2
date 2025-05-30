@@ -64,7 +64,7 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
       .eq('user_id', profile.id);
 
     if (chatMembers) {
-      const chatIds = chatMembers.map(cm => cm.chat_id);
+      const chatIds = chatMembers.map((cm: any) => cm.chat_id);
       
       // Fetch all members for these chats
       const { data: allMembers } = await supabase
@@ -81,10 +81,10 @@ export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) 
         .select('*')
         .in('chat_id', chatIds);
 
-      const chatsWithDetails: ChatWithDetails[] = chatMembers.map(cm => {
+      const chatsWithDetails: ChatWithDetails[] = chatMembers.map((cm: any) => {
         const chat = cm.chats;
-        const chatMembersWithProfiles = allMembers?.filter(m => m.chat_id === chat.id) || [];
-        const chatLabels = labels?.filter(l => l.chat_id === chat.id) || [];
+        const chatMembersWithProfiles = allMembers?.filter((m: any) => m.chat_id === chat.id) || [];
+        const chatLabels = labels?.filter((l: any) => l.chat_id === chat.id) || [];
         
         return {
           ...chat,
