@@ -4,16 +4,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Message, Profile, Chat, ChatMember } from '@/types/database';
 import { 
-  BsPhone, 
-  BsCamera, 
-  BsThreeDotsVertical,
-  BsPaperclip,
-  BsEmojiSmile,
-  BsSend,
-  BsImage,
-  BsDownload,
-  BsReply
-} from 'react-icons/bs';
+  Phone, 
+  Camera, 
+  MoreVertical,
+  Paperclip,
+  Smile,
+  Send,
+  Image,
+  Download,
+  Reply,
+  File,
+  Sticker
+} from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -27,41 +29,82 @@ interface MessageWithSender extends Message {
   sender: Profile;
 }
 
+// Sample messages for demonstration
+const sampleMessages: MessageWithSender[] = [
+  {
+    id: 'msg-1',
+    chat_id: 'chat-1',
+    sender_id: 'user-1',
+    content: 'Hey! How are you doing?',
+    message_type: 'text',
+    attachment_url: null,
+    reply_to: null,
+    created_at: new Date(Date.now() - 600000).toISOString(),
+    updated_at: new Date(Date.now() - 600000).toISOString(),
+    read_by: [],
+    edited: false,
+    sender: {
+      id: 'user-1',
+      email: 'john@example.com',
+      full_name: 'John Doe',
+      avatar_url: null,
+      phone: '+1234567890',
+      status: 'online',
+      last_seen: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  },
+  {
+    id: 'msg-2',
+    chat_id: 'chat-1',
+    sender_id: 'current-user',
+    content: 'I\'m doing great! Thanks for asking 😊',
+    message_type: 'text',
+    attachment_url: null,
+    reply_to: null,
+    created_at: new Date(Date.now() - 300000).toISOString(),
+    updated_at: new Date(Date.now() - 300000).toISOString(),
+    read_by: [],
+    edited: false,
+    sender: {
+      id: 'current-user',
+      email: 'me@example.com',
+      full_name: 'Me',
+      avatar_url: null,
+      phone: '+1234567899',
+      status: 'online',
+      last_seen: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    }
+  }
+];
+
+// Sample stickers
+const stickers = [
+  '😀', '😂', '😍', '🥰', '😎', '🤔', '😴', '🤯',
+  '👍', '👎', '👏', '🙌', '💪', '🙏', '✌️', '🤞',
+  '❤️', '💕', '💖', '💗', '💙', '💚', '💛', '🧡',
+  '🎉', '🎊', '🔥', '⭐', '✨', '💫', '🌟', '🎈'
+];
+
 export function ChatArea({ chatId }: ChatAreaProps) {
   const [messages, setMessages] = useState<MessageWithSender[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [chat, setChat] = useState<Chat | null>(null);
   const [chatMembers, setChatMembers] = useState<(ChatMember & { profile: Profile })[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showStickers, setShowStickers] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { profile } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
     if (chatId) {
-      fetchChatDetails();
-      fetchMessages();
-      
-      // Subscribe to new messages
-      const channel = supabase
-        .channel('schema-db-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `chat_id=eq.${chatId}`
-          },
-          (payload) => {
-            fetchMessages(); // Refetch to get sender details
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
+      loadSampleData();
+      scrollToBottom();
     }
   }, [chatId]);
 
@@ -73,69 +116,52 @@ export function ChatArea({ chatId }: ChatAreaProps) {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const fetchChatDetails = async () => {
-    const { data: chatData } = await supabase
-      .from('chats')
-      .select('*')
-      .eq('id', chatId)
-      .single();
+  const loadSampleData = () => {
+    // Load sample chat data
+    const sampleChat: Chat = {
+      id: chatId,
+      name: chatId === 'chat-1' ? 'John Doe' : chatId === 'chat-2' ? 'Sarah Wilson' : 'Marketing Team',
+      description: null,
+      chat_type: chatId === 'chat-3' ? 'group' : 'direct',
+      avatar_url: null,
+      created_by: 'user-1',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      last_message_at: new Date().toISOString(),
+    };
 
-    if (chatData) {
-      setChat(chatData);
-    }
-
-    const { data: membersData } = await supabase
-      .from('chat_members')
-      .select(`
-        *,
-        profile:profiles(*)
-      `)
-      .eq('chat_id', chatId);
-
-    if (membersData) {
-      setChatMembers(membersData as any);
-    }
+    setChat(sampleChat);
+    setMessages(sampleMessages.filter(msg => msg.chat_id === chatId));
   };
 
-  const fetchMessages = async () => {
-    const { data } = await supabase
-      .from('messages')
-      .select(`
-        *,
-        sender:profiles(*)
-      `)
-      .eq('chat_id', chatId)
-      .order('created_at', { ascending: true });
-
-    if (data) {
-      setMessages(data as any);
-    }
-  };
-
-  const sendMessage = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newMessage.trim() || !profile) return;
+  const sendMessage = async (content: string, type: 'text' | 'sticker' = 'text') => {
+    if (!content.trim() || !profile) return;
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('messages')
-        .insert({
-          chat_id: chatId,
-          sender_id: profile.id,
-          content: newMessage.trim(),
-          message_type: 'text'
-        });
+      const newMsg: MessageWithSender = {
+        id: `msg-${Date.now()}`,
+        chat_id: chatId,
+        sender_id: profile.id,
+        content: content.trim(),
+        message_type: type === 'sticker' ? 'text' : 'text',
+        attachment_url: null,
+        reply_to: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        read_by: [],
+        edited: false,
+        sender: profile
+      };
 
-      if (error) throw error;
-
+      setMessages(prev => [...prev, newMsg]);
       setNewMessage('');
-      
-      // Update chat's last_message_at
-      await supabase
-        .from('chats')
-        .update({ last_message_at: new Date().toISOString() })
-        .eq('id', chatId);
+      setShowStickers(false);
+
+      toast({
+        title: "Message sent",
+        description: "Your message has been delivered",
+      });
 
     } catch (error: any) {
       toast({
@@ -148,20 +174,32 @@ export function ChatArea({ chatId }: ChatAreaProps) {
     }
   };
 
-  const getChatDisplayName = () => {
-    if (chat?.name) return chat.name;
-    
-    // For direct chats, show the other person's name
-    const otherMember = chatMembers.find(m => m.user_id !== profile?.id);
-    return otherMember?.profile?.full_name || 'Unknown User';
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    sendMessage(newMessage);
   };
 
-  const getChatAvatar = () => {
-    if (chat?.avatar_url) return chat.avatar_url;
-    
-    // For direct chats, show the other person's avatar
-    const otherMember = chatMembers.find(m => m.user_id !== profile?.id);
-    return otherMember?.profile?.avatar_url;
+  const handleStickerClick = (sticker: string) => {
+    sendMessage(sticker, 'sticker');
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      toast({
+        title: "File upload",
+        description: `File "${file.name}" would be uploaded in a real implementation`,
+      });
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const getChatDisplayName = () => {
+    if (chat?.name) return chat.name;
+    return 'Unknown Chat';
   };
 
   const formatMessageTime = (timestamp: string) => {
@@ -174,7 +212,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
   const isConsecutiveMessage = (currentMsg: MessageWithSender, prevMsg: MessageWithSender | null) => {
     if (!prevMsg) return false;
     return currentMsg.sender_id === prevMsg.sender_id && 
-           new Date(currentMsg.created_at).getTime() - new Date(prevMsg.created_at).getTime() < 300000; // 5 minutes
+           new Date(currentMsg.created_at).getTime() - new Date(prevMsg.created_at).getTime() < 300000;
   };
 
   if (!chat) {
@@ -192,7 +230,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <Avatar className="w-10 h-10">
-              <AvatarImage src={getChatAvatar()} />
+              <AvatarImage src={chat.avatar_url} />
               <AvatarFallback className="bg-gray-200 text-gray-600">
                 {getChatDisplayName().charAt(0).toUpperCase()}
               </AvatarFallback>
@@ -200,20 +238,20 @@ export function ChatArea({ chatId }: ChatAreaProps) {
             <div>
               <h2 className="text-lg font-semibold text-gray-900">{getChatDisplayName()}</h2>
               <p className="text-sm text-gray-500">
-                {chat.chat_type === 'group' ? `${chatMembers.length} members` : 'Direct message'}
+                {chat.chat_type === 'group' ? 'Group chat' : 'Direct message'}
               </p>
             </div>
           </div>
           
           <div className="flex items-center space-x-2">
             <Button variant="ghost" size="sm">
-              <BsPhone className="w-5 h-5 text-gray-600" />
+              <Phone className="w-5 h-5 text-gray-600" />
             </Button>
             <Button variant="ghost" size="sm">
-              <BsCamera className="w-5 h-5 text-gray-600" />
+              <Camera className="w-5 h-5 text-gray-600" />
             </Button>
             <Button variant="ghost" size="sm">
-              <BsThreeDotsVertical className="w-4 h-4 text-gray-600" />
+              <MoreVertical className="w-4 h-4 text-gray-600" />
             </Button>
           </div>
         </div>
@@ -222,7 +260,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((message, index) => {
-          const isOwn = message.sender_id === profile?.id;
+          const isOwn = message.sender_id === profile?.id || message.sender_id === 'current-user';
           const isConsecutive = isConsecutiveMessage(message, messages[index - 1] || null);
           
           return (
@@ -258,22 +296,6 @@ export function ChatArea({ chatId }: ChatAreaProps) {
                     } ${isConsecutive ? 'rounded-t-sm' : ''}`}
                   >
                     <p className="text-sm">{message.content}</p>
-                    {message.attachment_url && (
-                      <div className="mt-2">
-                        {message.message_type === 'image' ? (
-                          <img 
-                            src={message.attachment_url} 
-                            alt="Attachment" 
-                            className="max-w-full h-auto rounded" 
-                          />
-                        ) : (
-                          <div className="flex items-center space-x-2 p-2 bg-white bg-opacity-20 rounded">
-                            <BsDownload className="w-4 h-4" />
-                            <span className="text-sm">File attachment</span>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                   
                   {isConsecutive && isOwn && (
@@ -289,11 +311,50 @@ export function ChatArea({ chatId }: ChatAreaProps) {
         <div ref={messagesEndRef} />
       </div>
 
+      {/* Sticker Panel */}
+      {showStickers && (
+        <div className="border-t border-gray-200 p-4 bg-white">
+          <div className="grid grid-cols-8 gap-2 max-h-40 overflow-y-auto">
+            {stickers.map((sticker, index) => (
+              <button
+                key={index}
+                onClick={() => handleStickerClick(sticker)}
+                className="text-2xl p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                {sticker}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Message Input */}
       <div className="p-4 border-t border-gray-200 bg-white">
-        <form onSubmit={sendMessage} className="flex items-center space-x-2">
-          <Button type="button" variant="ghost" size="sm">
-            <BsPaperclip className="w-5 h-5 text-gray-600" />
+        <form onSubmit={handleSubmit} className="flex items-center space-x-2">
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileUpload}
+            className="hidden"
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+          />
+          
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <Paperclip className="w-5 h-5 text-gray-600" />
+          </Button>
+          
+          <Button 
+            type="button" 
+            variant="ghost" 
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <File className="w-5 h-5 text-gray-600" />
           </Button>
           
           <div className="flex-1 relative">
@@ -304,13 +365,19 @@ export function ChatArea({ chatId }: ChatAreaProps) {
               className="pr-10"
               disabled={loading}
             />
-            <Button type="button" variant="ghost" size="sm" className="absolute right-2 top-1/2 transform -translate-y-1/2">
-              <BsEmojiSmile className="w-4 h-4 text-gray-600" />
+            <Button 
+              type="button" 
+              variant="ghost" 
+              size="sm" 
+              className="absolute right-2 top-1/2 transform -translate-y-1/2"
+              onClick={() => setShowStickers(!showStickers)}
+            >
+              <Smile className="w-4 h-4 text-gray-600" />
             </Button>
           </div>
           
           <Button type="submit" disabled={loading || !newMessage.trim()}>
-            <BsSend className="w-4 h-4" />
+            <Send className="w-4 h-4" />
           </Button>
         </form>
       </div>

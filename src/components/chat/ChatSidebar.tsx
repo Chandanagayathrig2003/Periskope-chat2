@@ -32,73 +32,135 @@ interface ChatSidebarProps {
   onChatSelect: (chatId: string) => void;
 }
 
+// Sample chat data
+const sampleChats: ChatWithDetails[] = [
+  {
+    id: 'chat-1',
+    name: 'John Doe',
+    description: null,
+    chat_type: 'direct',
+    avatar_url: null,
+    created_by: 'user-1',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    last_message_at: new Date().toISOString(),
+    members: [
+      {
+        id: 'member-1',
+        chat_id: 'chat-1',
+        user_id: 'user-1',
+        role: 'member',
+        joined_at: new Date().toISOString(),
+        profile: {
+          id: 'user-1',
+          email: 'john@example.com',
+          full_name: 'John Doe',
+          avatar_url: null,
+          phone: '+1234567890',
+          status: 'online',
+          last_seen: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      }
+    ],
+    labels: [
+      {
+        id: 'label-1',
+        chat_id: 'chat-1',
+        label: 'demo',
+        created_at: new Date().toISOString(),
+      }
+    ],
+    unreadCount: 3
+  },
+  {
+    id: 'chat-2',
+    name: 'Sarah Wilson',
+    description: null,
+    chat_type: 'direct',
+    avatar_url: null,
+    created_by: 'user-2',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    last_message_at: new Date(Date.now() - 300000).toISOString(),
+    members: [
+      {
+        id: 'member-2',
+        chat_id: 'chat-2',
+        user_id: 'user-2',
+        role: 'member',
+        joined_at: new Date().toISOString(),
+        profile: {
+          id: 'user-2',
+          email: 'sarah@example.com',
+          full_name: 'Sarah Wilson',
+          avatar_url: null,
+          phone: '+1234567891',
+          status: 'online',
+          last_seen: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      }
+    ],
+    labels: [
+      {
+        id: 'label-2',
+        chat_id: 'chat-2',
+        label: 'internal',
+        created_at: new Date().toISOString(),
+      }
+    ],
+    unreadCount: 1
+  },
+  {
+    id: 'chat-3',
+    name: 'Marketing Team',
+    description: 'Marketing discussions',
+    chat_type: 'group',
+    avatar_url: null,
+    created_by: 'user-3',
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    last_message_at: new Date(Date.now() - 600000).toISOString(),
+    members: [
+      {
+        id: 'member-3',
+        chat_id: 'chat-3',
+        user_id: 'user-3',
+        role: 'admin',
+        joined_at: new Date().toISOString(),
+        profile: {
+          id: 'user-3',
+          email: 'mike@example.com',
+          full_name: 'Mike Johnson',
+          avatar_url: null,
+          phone: '+1234567892',
+          status: 'away',
+          last_seen: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      }
+    ],
+    labels: [
+      {
+        id: 'label-3',
+        chat_id: 'chat-3',
+        label: 'content',
+        created_at: new Date().toISOString(),
+      }
+    ],
+    unreadCount: 0
+  }
+];
+
 export function ChatSidebar({ selectedChatId, onChatSelect }: ChatSidebarProps) {
-  const [chats, setChats] = useState<ChatWithDetails[]>([]);
+  const [chats, setChats] = useState<ChatWithDetails[]>(sampleChats);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilter, setSelectedFilter] = useState('all');
   const { profile } = useAuth();
-
-  useEffect(() => {
-    if (profile) {
-      fetchChats();
-    }
-  }, [profile]);
-
-  const fetchChats = async () => {
-    if (!profile) return;
-
-    const { data: chatMembers } = await supabase
-      .from('chat_members')
-      .select(`
-        chat_id,
-        chats!inner(
-          id,
-          name,
-          description,
-          chat_type,
-          avatar_url,
-          created_by,
-          created_at,
-          updated_at,
-          last_message_at
-        )
-      `)
-      .eq('user_id', profile.id);
-
-    if (chatMembers) {
-      const chatIds = chatMembers.map((cm: any) => cm.chat_id);
-      
-      // Fetch all members for these chats
-      const { data: allMembers } = await supabase
-        .from('chat_members')
-        .select(`
-          *,
-          profile:profiles(*)
-        `)
-        .in('chat_id', chatIds);
-
-      // Fetch labels for these chats
-      const { data: labels } = await supabase
-        .from('chat_labels')
-        .select('*')
-        .in('chat_id', chatIds);
-
-      const chatsWithDetails: ChatWithDetails[] = chatMembers.map((cm: any) => {
-        const chat = cm.chats;
-        const chatMembersWithProfiles = allMembers?.filter((m: any) => m.chat_id === chat.id) || [];
-        const chatLabels = labels?.filter((l: any) => l.chat_id === chat.id) || [];
-        
-        return {
-          ...chat,
-          members: chatMembersWithProfiles,
-          labels: chatLabels,
-          unreadCount: Math.floor(Math.random() * 5) // Demo unread count
-        };
-      });
-
-      setChats(chatsWithDetails);
-    }
-  };
 
   const filteredChats = chats.filter(chat => {
     const matchesSearch = chat.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
