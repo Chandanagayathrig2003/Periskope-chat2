@@ -29,57 +29,114 @@ interface MessageWithSender extends Message {
   sender: Profile;
 }
 
+// Current user profile for demo
+const currentUser: Profile = {
+  id: 'current-user',
+  email: 'me@example.com',
+  full_name: 'Me',
+  avatar_url: null,
+  phone: '+1234567899',
+  status: 'online',
+  last_seen: new Date().toISOString(),
+  created_at: new Date().toISOString(),
+  updated_at: new Date().toISOString(),
+};
+
 // Sample messages for demonstration
-const sampleMessages: MessageWithSender[] = [
-  {
-    id: 'msg-1',
-    chat_id: 'chat-1',
-    sender_id: 'user-1',
-    content: 'Hey! How are you doing?',
-    message_type: 'text',
-    attachment_url: null,
-    reply_to: null,
-    created_at: new Date(Date.now() - 600000).toISOString(),
-    updated_at: new Date(Date.now() - 600000).toISOString(),
-    read_by: [],
-    edited: false,
-    sender: {
-      id: 'user-1',
-      email: 'john@example.com',
-      full_name: 'John Doe',
-      avatar_url: null,
-      phone: '+1234567890',
-      status: 'online',
-      last_seen: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+const initialMessages: { [key: string]: MessageWithSender[] } = {
+  'chat-1': [
+    {
+      id: 'msg-1',
+      chat_id: 'chat-1',
+      sender_id: 'user-1',
+      content: 'Hey! How are you doing?',
+      message_type: 'text',
+      attachment_url: null,
+      reply_to: null,
+      created_at: new Date(Date.now() - 600000).toISOString(),
+      updated_at: new Date(Date.now() - 600000).toISOString(),
+      read_by: [],
+      edited: false,
+      sender: {
+        id: 'user-1',
+        email: 'john@example.com',
+        full_name: 'John Doe',
+        avatar_url: null,
+        phone: '+1234567890',
+        status: 'online',
+        last_seen: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    },
+    {
+      id: 'msg-2',
+      chat_id: 'chat-1',
+      sender_id: 'current-user',
+      content: 'I\'m doing great! Thanks for asking 😊',
+      message_type: 'text',
+      attachment_url: null,
+      reply_to: null,
+      created_at: new Date(Date.now() - 300000).toISOString(),
+      updated_at: new Date(Date.now() - 300000).toISOString(),
+      read_by: [],
+      edited: false,
+      sender: currentUser
     }
-  },
-  {
-    id: 'msg-2',
-    chat_id: 'chat-1',
-    sender_id: 'current-user',
-    content: 'I\'m doing great! Thanks for asking 😊',
-    message_type: 'text',
-    attachment_url: null,
-    reply_to: null,
-    created_at: new Date(Date.now() - 300000).toISOString(),
-    updated_at: new Date(Date.now() - 300000).toISOString(),
-    read_by: [],
-    edited: false,
-    sender: {
-      id: 'current-user',
-      email: 'me@example.com',
-      full_name: 'Me',
-      avatar_url: null,
-      phone: '+1234567899',
-      status: 'online',
-      last_seen: new Date().toISOString(),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+  ],
+  'chat-2': [
+    {
+      id: 'msg-3',
+      chat_id: 'chat-2',
+      sender_id: 'user-2',
+      content: 'Can we schedule a meeting for tomorrow?',
+      message_type: 'text',
+      attachment_url: null,
+      reply_to: null,
+      created_at: new Date(Date.now() - 120000).toISOString(),
+      updated_at: new Date(Date.now() - 120000).toISOString(),
+      read_by: [],
+      edited: false,
+      sender: {
+        id: 'user-2',
+        email: 'sarah@example.com',
+        full_name: 'Sarah Wilson',
+        avatar_url: null,
+        phone: '+1234567891',
+        status: 'online',
+        last_seen: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
     }
-  }
-];
+  ],
+  'chat-3': [
+    {
+      id: 'msg-4',
+      chat_id: 'chat-3',
+      sender_id: 'user-3',
+      content: 'Let\'s discuss the new campaign ideas',
+      message_type: 'text',
+      attachment_url: null,
+      reply_to: null,
+      created_at: new Date(Date.now() - 900000).toISOString(),
+      updated_at: new Date(Date.now() - 900000).toISOString(),
+      read_by: [],
+      edited: false,
+      sender: {
+        id: 'user-3',
+        email: 'mike@example.com',
+        full_name: 'Mike Johnson',
+        avatar_url: null,
+        phone: '+1234567892',
+        status: 'away',
+        last_seen: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+    }
+  ]
+};
 
 // Sample stickers
 const stickers = [
@@ -93,12 +150,10 @@ export function ChatArea({ chatId }: ChatAreaProps) {
   const [messages, setMessages] = useState<MessageWithSender[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [chat, setChat] = useState<Chat | null>(null);
-  const [chatMembers, setChatMembers] = useState<(ChatMember & { profile: Profile })[]>([]);
   const [loading, setLoading] = useState(false);
   const [showStickers, setShowStickers] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { profile } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -131,30 +186,37 @@ export function ChatArea({ chatId }: ChatAreaProps) {
     };
 
     setChat(sampleChat);
-    setMessages(sampleMessages.filter(msg => msg.chat_id === chatId));
+    setMessages(initialMessages[chatId] || []);
   };
 
   const sendMessage = async (content: string, type: 'text' | 'sticker' = 'text') => {
-    if (!content.trim() || !profile) return;
+    if (!content.trim()) return;
 
     setLoading(true);
     try {
       const newMsg: MessageWithSender = {
         id: `msg-${Date.now()}`,
         chat_id: chatId,
-        sender_id: profile.id,
+        sender_id: 'current-user',
         content: content.trim(),
-        message_type: type === 'sticker' ? 'text' : 'text',
+        message_type: 'text',
         attachment_url: null,
         reply_to: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         read_by: [],
         edited: false,
-        sender: profile
+        sender: currentUser
       };
 
       setMessages(prev => [...prev, newMsg]);
+      
+      // Update the initial messages store for persistence
+      if (!initialMessages[chatId]) {
+        initialMessages[chatId] = [];
+      }
+      initialMessages[chatId].push(newMsg);
+      
       setNewMessage('');
       setShowStickers(false);
 
@@ -164,6 +226,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
       });
 
     } catch (error: any) {
+      console.error('Error sending message:', error);
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -176,7 +239,9 @@ export function ChatArea({ chatId }: ChatAreaProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    sendMessage(newMessage);
+    if (newMessage.trim()) {
+      sendMessage(newMessage);
+    }
   };
 
   const handleStickerClick = (sticker: string) => {
@@ -186,10 +251,17 @@ export function ChatArea({ chatId }: ChatAreaProps) {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log('File selected:', file.name, file.type, file.size);
+      
+      // Create a message with file info
+      const fileMessage = `📎 Shared a file: ${file.name}`;
+      sendMessage(fileMessage);
+      
       toast({
-        title: "File upload",
-        description: `File "${file.name}" would be uploaded in a real implementation`,
+        title: "File shared",
+        description: `File "${file.name}" has been shared`,
       });
+      
       // Reset file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
@@ -260,7 +332,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((message, index) => {
-          const isOwn = message.sender_id === profile?.id || message.sender_id === 'current-user';
+          const isOwn = message.sender_id === 'current-user';
           const isConsecutive = isConsecutiveMessage(message, messages[index - 1] || null);
           
           return (
@@ -320,6 +392,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
                 key={index}
                 onClick={() => handleStickerClick(sticker)}
                 className="text-2xl p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                type="button"
               >
                 {sticker}
               </button>
@@ -336,7 +409,7 @@ export function ChatArea({ chatId }: ChatAreaProps) {
             type="file"
             onChange={handleFileUpload}
             className="hidden"
-            accept="image/*,video/*,audio/*,.pdf,.doc,.docx"
+            accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt"
           />
           
           <Button 
